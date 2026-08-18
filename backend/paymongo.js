@@ -4,23 +4,28 @@
  * Uses PayMongo Hosted Checkout v2 for new integrations.
  */
 
+import crypto from 'node:crypto';
+
 const PAYMONGO_API = 'https://api.paymongo.com/v2';
 
 function authHeader(secret) {
   return 'Basic ' + Buffer.from(`${secret}:`).toString('base64');
 }
 
-async function paymongoRequest(path, method, body) {
+async function paymongoRequest(path, method, body, { idempotencyKey } = {}) {
   const secret = process.env.PAYMONGO_SECRET_KEY;
   if (!secret) throw new Error('PAYMONGO_SECRET_KEY is not configured');
 
+  const headers = {
+    Authorization: authHeader(secret),
+    'Content-Type': 'application/json',
+    Accept: 'application/json'
+  };
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+
   const response = await fetch(`${PAYMONGO_API}${path}`, {
     method,
-    headers: {
-      Authorization: authHeader(secret),
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
 
@@ -38,9 +43,10 @@ const PLANS = Object.freeze({
   monthly: { name: 'TagalogDrama Monthly', amount: 24900, durationDays: 30 }
 });
 
-export async function createCheckoutSession({ plan, userId, email, successUrl, cancelUrl }) {
+export async function createCheckoutSession({ plan, userId, email, successUrl, cancelUrl, idempotencyKey }) {
   const selected = PLANS[plan];
   if (!selected) throw new Error('Invalid subscription plan');
+  if (!idempotencyKey) throw new Error('idempotencyKey is required');
 
   const reference = `TD-${String(userId)}-${Date.now()}`;
   const payload = await paymongoRequest('/checkout_sessions', 'POST', {
@@ -65,7 +71,7 @@ export async function createCheckoutSession({ plan, userId, email, successUrl, c
         }
       }
     }
-  });
+  }, { idempotencyKey });
 
   return {
     id: payload?.data?.id,
@@ -74,6 +80,23 @@ export async function createCheckoutSession({ plan, userId, email, successUrl, c
     plan,
     durationDays: selected.durationDays
   };
+}
+
+export function verifyWebhookSignature(rawBody, signatureHeader, secret, livemode) {
+  if (!rawBody || !signatureHeader || !secret) return false;
+  const parts = Object.fromEntries(
+    String(signatureHeader).split(',').map(part => {
+      const index = part.indexOf('=');
+      return index > 0 ? [part.slice(0, index).trim(), part.slice(index + 1).trim()] : ['', ''];
+    }).filter(([key]) => key)
+  );
+  if (!parts.t) return false;
+  const provided = livemode ? parts.li : parts.te;
+  if (!provided) return false;
+  const expected = crypto.createHmac('sha256', secret).update(`${parts.t}.${rawBody}`).digest('hex');
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(provided, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export { PLANS };
