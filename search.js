@@ -1,0 +1,10 @@
+const SERIES=[
+{id:'sa-likod-ng-pangako',title:'Sa Likod ng Pangako',genres:['Romance','Family'],tag:'NEW'},
+{id:'mahal-kita-kahit-kailan',title:'Mahal Kita, Kahit Kailan',genres:['Romance','Drama'],tag:'TRENDING'},
+{id:'ang-huling-lihim',title:'Ang Huling Lihim',genres:['Mystery','Drama'],tag:'HOT'},
+{id:'bago-maghatinggabi',title:'Bago Maghatinggabi',genres:['Romance','Suspense'],tag:'NEW'}];
+const FAV='tagalogdrama.favorites';let active='All';const results=document.getElementById('results');const query=document.getElementById('query');
+function isFav(id){return JSON.parse(localStorage.getItem(FAV)||'[]').includes(id)}
+function toggleFav(id){let a=JSON.parse(localStorage.getItem(FAV)||'[]');a=a.includes(id)?a.filter(x=>x!==id):[...a,id];localStorage.setItem(FAV,JSON.stringify(a));render()}
+function render(){const q=query.value.trim().toLowerCase();const list=SERIES.filter(s=>(active==='All'||s.genres.includes(active))&&(!q||s.title.toLowerCase().includes(q)||s.genres.some(g=>g.toLowerCase().includes(q))));results.innerHTML=list.length?list.map(s=>`<article class="card"><div class="poster"><div><small>${s.tag}</small><br><b>${s.title}</b></div></div><div class="card-body"><h3>${s.title}</h3><p>${s.genres.join(' • ')}</p><div class="card-actions"><a class="primary" href="episodes.html?series=${encodeURIComponent(s.id)}">Episodes</a><button class="secondary fav" data-id="${s.id}">${isFav(s.id)?'♥ Saved':'♡ Favorite'}</button></div></div></article>`).join(''):'<p class="muted">No dramas found. Try another title or genre.</p>';document.querySelectorAll('.fav').forEach(b=>b.onclick=()=>toggleFav(b.dataset.id))}
+document.querySelectorAll('.filter').forEach(b=>b.onclick=()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');active=b.dataset.genre;render()});query.addEventListener('input',render);document.getElementById('searchBtn').onclick=render;render();
