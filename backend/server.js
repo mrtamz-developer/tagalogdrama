@@ -64,8 +64,6 @@ app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '10
     return res.status(200).json({ received: true, ...result });
   } catch (error) {
     console.error('PayMongo fulfillment failed', error.message);
-    // Do not acknowledge a verified payment until durable fulfillment succeeds.
-    // PayMongo retries failed webhook deliveries.
     return res.status(503).json({ error: 'Payment fulfillment temporarily unavailable' });
   }
 });
@@ -74,7 +72,9 @@ app.use(express.json({ limit: '100kb' }));
 
 const catalogPath = path.resolve(process.cwd(), '../data/dramas.json');
 const emailSchema = z.string().email().max(254);
-const progressSchema = z.object({ secondsWatched: z.number().int().min(0).max(24 * 60 * 60 });
+const progressSchema = z.object({
+  secondsWatched: z.number().int().min(0).max(24 * 60 * 60)
+});
 const planSchema = z.object({ plan: z.enum(['daily', 'weekly', 'monthly']) });
 
 async function catalog() {
@@ -105,7 +105,6 @@ app.post('/auth/login', async (req, res) => {
 });
 
 app.get('/me', auth, (req, res) => res.json({ user: req.user }));
-
 app.get('/series', async (_req, res) => res.json(await catalog()));
 app.get('/series/:id', async (req, res) => {
   const data = await catalog();
@@ -113,18 +112,13 @@ app.get('/series/:id', async (req, res) => {
   if (!series) return res.status(404).json({ error: 'Series not found' });
   res.json(series);
 });
-
 app.get('/series/:id/episodes', async (req, res) => {
   const data = await catalog();
   const series = data.series.find(item => item.id === req.params.id);
   if (!series) return res.status(404).json({ error: 'Series not found' });
   res.json({ seriesId: series.id, episodes: series.episodes });
 });
-
-app.post('/episodes/:id/unlock-ad', auth, (_req, res) => {
-  return res.status(501).json({ error: 'Rewarded ads are not configured; no entitlement was granted.' });
-});
-
+app.post('/episodes/:id/unlock-ad', auth, (_req, res) => res.status(501).json({ error: 'Rewarded ads are not configured; no entitlement was granted.' }));
 app.post('/episodes/:id/play', auth, async (req, res) => {
   const data = await catalog();
   const episode = data.series.flatMap(s => s.episodes).find(e => e.id === req.params.id);
@@ -133,37 +127,20 @@ app.post('/episodes/:id/play', auth, async (req, res) => {
   if (!DEMO_MODE) return res.status(501).json({ error: 'Protected playback is not configured' });
   res.json({ episodeId: episode.id, playbackUrl: episode.videoUrl, expiresIn: 300, demo: true });
 });
-
 app.put('/episodes/:id/progress', auth, (req, res) => {
   const parsed = progressSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'secondsWatched must be an integer from 0 to 86400' });
   res.json({ ok: true, episodeId: req.params.id, secondsWatched: parsed.data.secondsWatched });
 });
-
-app.get('/plans', (_req, res) => res.json(Object.entries(PLANS).map(([id, plan]) => ({
-  id,
-  name: plan.name.replace('TagalogDrama ', ''),
-  pricePHP: plan.amount / 100,
-  durationDays: plan.durationDays
-}))));
-
+app.get('/plans', (_req, res) => res.json(Object.entries(PLANS).map(([id, plan]) => ({ id, name: plan.name.replace('TagalogDrama ', ''), pricePHP: plan.amount / 100, durationDays: plan.durationDays }))));
 app.post('/subscriptions/checkout', auth, async (req, res) => {
   const parsed = planSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Invalid plan' });
   if (!process.env.PAYMONGO_SECRET_KEY) return res.status(503).json({ error: 'Payment provider not configured' });
-
   const frontend = process.env.FRONTEND_ORIGIN;
   if (!frontend) return res.status(503).json({ error: 'Frontend origin is not configured' });
-
   try {
-    const result = await createCheckoutSession({
-      plan: parsed.data.plan,
-      userId: req.user.id,
-      email: req.user.email,
-      successUrl: `${frontend}/payment-success.html`,
-      cancelUrl: `${frontend}/subscription.html`,
-      idempotencyKey: `td-${req.user.id}-${parsed.data.plan}-${String(req.headers['idempotency-key'] || Date.now())}`
-    });
+    const result = await createCheckoutSession({ plan: parsed.data.plan, userId: req.user.id, email: req.user.email, successUrl: `${frontend}/payment-success.html`, cancelUrl: `${frontend}/subscription.html`, idempotencyKey: `td-${req.user.id}-${parsed.data.plan}-${String(req.headers['idempotency-key'] || Date.now())}` });
     return res.status(201).json(result);
   } catch (error) {
     console.error('PayMongo checkout creation failed', error.message);
