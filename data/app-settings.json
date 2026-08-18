@@ -1,0 +1,7 @@
+{
+  "appName":"TagalogDrama",
+  "defaultLanguage":"en-PH",
+  "supportedLanguages":["en-PH","fil-PH"],
+  "features":{"subscriptions":true,"rewardedAds":true,"payments":false,"authentication":false},
+  "maintenanceMode":false
+}
