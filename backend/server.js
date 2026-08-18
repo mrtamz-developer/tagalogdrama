@@ -10,6 +10,7 @@ import { createCheckoutSession, PLANS, verifyWebhookSignature } from './paymongo
 import { fulfillPayMongoCheckoutPaid } from './payment-webhook.js';
 import { fulfillAdMobReward } from './rewarded-ad.js';
 import { getEpisodeAccess } from './access-control.js';
+import { getCurrentSubscription } from './subscription-status.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -36,6 +37,7 @@ async function catalog(){return JSON.parse(await fs.readFile(catalogPath,'utf8')
 function auth(req,res,next){const header=req.headers.authorization||'';const token=header.startsWith('Bearer ')?header.slice(7):null;if(!token)return res.status(401).json({error:'Authentication required'});try{req.user=jwt.verify(token,JWT_SECRET);next();}catch{return res.status(401).json({error:'Invalid or expired token'});}}
 app.post('/auth/login',async(req,res)=>{if(!DEMO_MODE)return res.status(503).json({error:'Authentication provider not configured'});const parsed=emailSchema.safeParse(req.body?.email);if(!parsed.success)return res.status(400).json({error:'Valid email required'});const user={id:`demo-${Buffer.from(parsed.data).toString('hex').slice(0,24)}`,email:parsed.data};const token=jwt.sign(user,JWT_SECRET,{expiresIn:'1h'});res.json({user,token,demo:true});});
 app.get('/me',auth,(req,res)=>res.json({user:req.user}));
+app.get('/me/subscription',auth,async(req,res)=>{try{return res.json(await getCurrentSubscription(req.user.id));}catch(error){console.error('Subscription status lookup failed',error.message);return res.status(503).json({error:'Subscription status temporarily unavailable'});}});
 app.get('/series',async(_req,res)=>res.json(await catalog()));
 app.get('/series/:id',async(req,res)=>{const data=await catalog();const series=data.series.find(item=>item.id===req.params.id);if(!series)return res.status(404).json({error:'Series not found'});res.json(series);});
 app.get('/series/:id/episodes',async(req,res)=>{const data=await catalog();const series=data.series.find(item=>item.id===req.params.id);if(!series)return res.status(404).json({error:'Series not found'});res.json({seriesId:series.id,episodes:series.episodes});});
