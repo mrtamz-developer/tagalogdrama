@@ -1,0 +1,8 @@
+{
+  "analytics": {"enabled": false,"consentRequired": true},
+  "personalization": {"enabled": true,"storage":"localStorage"},
+  "dataMinimization": true,
+  "collectPreciseLocation": false,
+  "collectPaymentCredentials": false,
+  "sellPersonalData": false
+}
