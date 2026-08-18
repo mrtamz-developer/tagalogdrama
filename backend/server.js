@@ -65,7 +65,7 @@ app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '10
   } catch (error) {
     console.error('PayMongo fulfillment failed', error.message);
     // Do not acknowledge a verified payment until durable fulfillment succeeds.
-    // PayMongo can retry failed webhook deliveries.
+    // PayMongo retries failed webhook deliveries.
     return res.status(503).json({ error: 'Payment fulfillment temporarily unavailable' });
   }
 });
@@ -74,7 +74,7 @@ app.use(express.json({ limit: '100kb' }));
 
 const catalogPath = path.resolve(process.cwd(), '../data/dramas.json');
 const emailSchema = z.string().email().max(254);
-const progressSchema = z.object({ secondsWatched: z.number().int().min(0).max(24 * 60 * 60) });
+const progressSchema = z.object({ secondsWatched: z.number().int().min(0).max(24 * 60 * 60 });
 const planSchema = z.object({ plan: z.enum(['daily', 'weekly', 'monthly']) });
 
 async function catalog() {
@@ -145,7 +145,7 @@ app.get('/plans', (_req, res) => res.json(Object.entries(PLANS).map(([id, plan])
   name: plan.name.replace('TagalogDrama ', ''),
   pricePHP: plan.amount / 100,
   durationDays: plan.durationDays
-})));
+}))));
 
 app.post('/subscriptions/checkout', auth, async (req, res) => {
   const parsed = planSchema.safeParse(req.body);
