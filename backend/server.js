@@ -7,6 +7,7 @@ import { z } from 'zod';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createCheckoutSession, PLANS, verifyWebhookSignature } from './paymongo.js';
+import { fulfillPayMongoCheckoutPaid } from './payment-webhook.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -36,7 +37,7 @@ function rateLimit(req, res, next) {
 app.use(rateLimit);
 
 // PayMongo requires the untouched request bytes for HMAC verification.
-app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '100kb' }), (req, res) => {
+app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '100kb' }), async (req, res) => {
   const signature = req.headers['paymongo-signature'];
   const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
   if (!secret) return res.status(503).json({ error: 'Payment webhook is not configured' });
@@ -53,20 +54,20 @@ app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '10
     return res.status(400).json({ error: 'Invalid webhook payload' });
   }
 
-  const event = payload?.data?.attributes;
-  const eventType = event?.type;
-  if (eventType === 'checkout_session.payment.paid') {
-    // Acknowledge only after authentication. Durable entitlement creation must be
-    // implemented against the production database before granting premium access.
-    console.log('PayMongo payment received', {
-      eventId: payload?.data?.id,
-      checkoutSessionId: event?.data?.id,
-      referenceNumber: event?.data?.attributes?.reference_number,
-      metadata: event?.data?.attributes?.metadata
-    });
+  const eventType = payload?.data?.attributes?.type;
+  if (eventType !== 'checkout_session.payment.paid') {
+    return res.status(200).json({ received: true, ignored: true });
   }
 
-  return res.status(200).json({ received: true });
+  try {
+    const result = await fulfillPayMongoCheckoutPaid(payload);
+    return res.status(200).json({ received: true, ...result });
+  } catch (error) {
+    console.error('PayMongo fulfillment failed', error.message);
+    // Do not acknowledge a verified payment until durable fulfillment succeeds.
+    // PayMongo can retry failed webhook deliveries.
+    return res.status(503).json({ error: 'Payment fulfillment temporarily unavailable' });
+  }
 });
 
 app.use(express.json({ limit: '100kb' }));
