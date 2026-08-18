@@ -47,3 +47,16 @@ Only upload, stream, or monetize video, artwork, music, logos, and metadata that
 ## Security
 
 Never commit `.env` files, private API keys, service-role keys, payment secrets, database passwords, or permanent private video URLs. Premium access must be verified server-side.
+
+## Release documentation
+
+- `docs/PRODUCTION-READINESS.md` — production prerequisites
+- `docs/FINAL-RELEASE-GATE.md` — final release gate
+- `docs/LAUNCH-BLOCKERS.md` — release blockers
+- `docs/QA-MATRIX.md` — QA coverage
+- `docs/CONTENT-RIGHTS-REGISTER.md` — content licensing register
+- `docs/SECURITY-RELEASE-CHECK.md` — security gate
+- `docs/OPERATIONS-CHECKLIST.md` — deployment and incident checklist
+- `docs/DEVELOPMENT-ROADMAP.md` — staged roadmap
+
+Payment integration, including PayMongo, remains intentionally deferred until the backend and security controls are ready.
