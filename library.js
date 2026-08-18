@@ -1,0 +1,6 @@
+const KEY='tagalogdrama.progress';const FAV='tagalogdrama.favorites';
+const catalog=[['sa-likod-ng-pangako','Sa Likod ng Pangako'],['mahal-kita-kahit-kailan','Mahal Kita, Kahit Kailan'],['ang-huling-lihim','Ang Huling Lihim'],['bago-maghatinggabi','Bago Maghatinggabi']];
+const progress=JSON.parse(localStorage.getItem(KEY)||'{}');const favorites=JSON.parse(localStorage.getItem(FAV)||'[]');
+function card(id,title,pct){return `<article class="card"><div class="poster"><div><small>${pct?pct+'% WATCHED':'SAVED'}</small><br><b>${title}</b></div></div><div class="card-body"><h3>${title}</h3><p>${pct?`Continue from ${pct}%`:'Your favorite series'}</p><a class="primary" href="episodes.html?series=${encodeURIComponent(id)}">${pct?'Continue Watching':'View Episodes'}</a></div></article>`}
+const c=document.getElementById('continueGrid');const watched=catalog.filter(([id])=>progress[id]>0);c.innerHTML=watched.length?watched.map(([id,t])=>card(id,t,progress[id])).join(''):'<p class="muted">Nothing here yet. Start watching a series to see it here.</p>';
+const f=document.getElementById('favoriteGrid');const saved=catalog.filter(([id])=>favorites.includes(id));f.innerHTML=saved.length?saved.map(([id,t])=>card(id,t,0)).join(''):'<p class="muted">No favorites yet.</p>';
