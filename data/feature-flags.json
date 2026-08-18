@@ -1,0 +1,15 @@
+{
+  "version":"1.0.0",
+  "flags":{
+    "catalog":true,
+    "favorites":true,
+    "watchProgress":true,
+    "subscriptions":true,
+    "rewardedAds":true,
+    "payments":false,
+    "authentication":false,
+    "productionVideo":false,
+    "offlineMode":true,
+    "filipinoLanguage":true
+  }
+}
