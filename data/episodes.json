@@ -1,0 +1,12 @@
+{
+  "episodes": {
+    "sa-likod-ng-pangako": 24,
+    "mahal-kita-kahit-kailan": 18,
+    "ang-huling-lihim": 30,
+    "bago-maghatinggabi": 16
+  },
+  "access": {
+    "freeRule": "episode_1_and_every_5th",
+    "paidRule": "subscription_required"
+  }
+}
