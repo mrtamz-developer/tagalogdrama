@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "provider": null,
+  "rewardedUnlock": {"enabled": true,"reward":"episode_access","cooldownMinutes":0},
+  "freeEpisodes": "episode_1_and_every_5th",
+  "productionNote": "Connect an approved mobile ad SDK before enabling real rewarded ads. Never grant rewards based only on client-side claims in production."
+}
