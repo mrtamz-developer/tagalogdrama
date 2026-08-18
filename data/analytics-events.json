@@ -1,0 +1,13 @@
+{
+  "version":"1.0.0",
+  "events":[
+    {"name":"app_open","purpose":"Measure app opens"},
+    {"name":"series_view","purpose":"Measure catalog engagement"},
+    {"name":"episode_open","purpose":"Measure episode selection"},
+    {"name":"episode_progress","purpose":"Measure viewing progress"},
+    {"name":"favorite_toggle","purpose":"Measure library engagement"},
+    {"name":"rewarded_ad_request","purpose":"Measure ad unlock attempts"},
+    {"name":"subscription_select","purpose":"Measure plan interest"}
+  ],
+  "privacy":"Do not collect precise location, payment credentials, passwords, or unnecessary personal information in client analytics. Obtain required consent before production analytics deployment."
+}
