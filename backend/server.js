@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { createCheckoutSession, PLANS, verifyWebhookSignature } from './paymongo.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
@@ -16,7 +17,6 @@ if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
 const allowedOrigin = process.env.FRONTEND_ORIGIN;
 app.use(helmet());
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : { origin: false }));
-app.use(express.json({ limit: '100kb' }));
 
 const rateBuckets = new Map();
 const RATE_WINDOW_MS = 60_000;
@@ -34,6 +34,42 @@ function rateLimit(req, res, next) {
   return next();
 }
 app.use(rateLimit);
+
+// PayMongo requires the untouched request bytes for HMAC verification.
+app.post('/payments/webhook', express.raw({ type: 'application/json', limit: '100kb' }), (req, res) => {
+  const signature = req.headers['paymongo-signature'];
+  const secret = process.env.PAYMONGO_WEBHOOK_SECRET;
+  if (!secret) return res.status(503).json({ error: 'Payment webhook is not configured' });
+
+  let payload;
+  try {
+    const rawBody = req.body.toString('utf8');
+    payload = JSON.parse(rawBody);
+    const livemode = payload?.data?.attributes?.livemode === true;
+    if (!verifyWebhookSignature(rawBody, signature, secret, livemode)) {
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+  } catch {
+    return res.status(400).json({ error: 'Invalid webhook payload' });
+  }
+
+  const event = payload?.data?.attributes;
+  const eventType = event?.type;
+  if (eventType === 'checkout_session.payment.paid') {
+    // Acknowledge only after authentication. Durable entitlement creation must be
+    // implemented against the production database before granting premium access.
+    console.log('PayMongo payment received', {
+      eventId: payload?.data?.id,
+      checkoutSessionId: event?.data?.id,
+      referenceNumber: event?.data?.attributes?.reference_number,
+      metadata: event?.data?.attributes?.metadata
+    });
+  }
+
+  return res.status(200).json({ received: true });
+});
+
+app.use(express.json({ limit: '100kb' }));
 
 const catalogPath = path.resolve(process.cwd(), '../data/dramas.json');
 const emailSchema = z.string().email().max(254);
@@ -103,19 +139,36 @@ app.put('/episodes/:id/progress', auth, (req, res) => {
   res.json({ ok: true, episodeId: req.params.id, secondsWatched: parsed.data.secondsWatched });
 });
 
-app.get('/plans', (_req, res) => res.json([
-  { id: 'daily', name: 'Daily', pricePHP: 29, durationDays: 1 },
-  { id: 'weekly', name: 'Weekly', pricePHP: 99, durationDays: 7 },
-  { id: 'monthly', name: 'Monthly', pricePHP: 249, durationDays: 30 }
-]));
+app.get('/plans', (_req, res) => res.json(Object.entries(PLANS).map(([id, plan]) => ({
+  id,
+  name: plan.name.replace('TagalogDrama ', ''),
+  pricePHP: plan.amount / 100,
+  durationDays: plan.durationDays
+})));
 
-app.post('/subscriptions/checkout', auth, (req, res) => {
+app.post('/subscriptions/checkout', auth, async (req, res) => {
   const parsed = planSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Invalid plan' });
-  return res.status(501).json({ error: 'Payment provider not configured', plan: parsed.data.plan });
-});
+  if (!process.env.PAYMONGO_SECRET_KEY) return res.status(503).json({ error: 'Payment provider not configured' });
 
-app.post('/payments/webhook', (_req, res) => res.status(501).json({ error: 'Payment webhook provider not configured' }));
+  const frontend = process.env.FRONTEND_ORIGIN;
+  if (!frontend) return res.status(503).json({ error: 'Frontend origin is not configured' });
+
+  try {
+    const result = await createCheckoutSession({
+      plan: parsed.data.plan,
+      userId: req.user.id,
+      email: req.user.email,
+      successUrl: `${frontend}/payment-success.html`,
+      cancelUrl: `${frontend}/subscription.html`,
+      idempotencyKey: `td-${req.user.id}-${parsed.data.plan}-${String(req.headers['idempotency-key'] || Date.now())}`
+    });
+    return res.status(201).json(result);
+  } catch (error) {
+    console.error('PayMongo checkout creation failed', error.message);
+    return res.status(502).json({ error: 'Unable to create payment checkout' });
+  }
+});
 
 app.use((err, _req, res, _next) => {
   console.error(err);
