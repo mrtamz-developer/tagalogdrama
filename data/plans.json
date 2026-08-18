@@ -1,0 +1,10 @@
+{
+  "currency":"PHP",
+  "plans":[
+    {"id":"daily","name":"Daily","price":29,"period":"day","durationDays":1,"status":"planned"},
+    {"id":"weekly","name":"Weekly","price":99,"period":"week","durationDays":7,"status":"planned"},
+    {"id":"monthly","name":"Monthly","price":249,"period":"month","durationDays":30,"status":"planned"}
+  ],
+  "paymentProvider":null,
+  "note":"Payment processing is intentionally deferred. Prices are configuration placeholders until launch terms are finalized."
+}
