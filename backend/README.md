@@ -1,26 +1,29 @@
-# Backend architecture
+# TagalogDrama API
 
-This directory documents the production backend contract without storing secrets in Git.
+Express API for catalog access, authentication, playback gating, progress tracking, and future monetization integrations.
 
-## Recommended production stack
+## Local setup
 
-- Authentication: managed auth provider or a secure server-side auth system
+1. Copy `.env.example` to `.env`.
+2. Set a strong `JWT_SECRET`.
+3. Keep `DEMO_MODE=false` unless intentionally testing demo-only authentication/playback.
+4. Set `FRONTEND_ORIGIN` to the exact development frontend origin.
+5. Install dependencies with `npm install`.
+6. Run with `npm start`.
+
+## Production rules
+
+- Use encrypted deployment secrets for all credentials.
+- Keep `DEMO_MODE=false`.
+- Configure an exact production `FRONTEND_ORIGIN`.
+- Do not expose database, payment, signing, or provider secrets to browser code.
+- Payment and rewarded-ad endpoints must remain disabled until provider verification is implemented.
+- Premium playback must use server-side entitlement checks and short-lived authorization.
+
+## Architecture
+
+- Authentication: managed auth provider or secure server-side auth
 - Database: PostgreSQL
-- Video: licensed video CDN/object storage with signed playback URLs
-- Payments: a Philippine-compatible payment provider with webhook verification
-- Ads: rewarded-ad SDK on Android; web implementation depends on the ad network
-
-## Core entities
-
-- users
-- subscriptions
-- series
-- episodes
-- watch_progress
-- favorites
-- ad_unlocks
-- payments
-
-## Security
-
-Never put payment secret keys, database passwords, service-role keys, or private video URLs in frontend JavaScript. Subscription status and ad unlocks must be verified server-side.
+- Video: licensed CDN/object storage with signed playback URLs
+- Payments: provider with verified webhooks
+- Ads: rewarded-ad SDK with server-side reward verification
