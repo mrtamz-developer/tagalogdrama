@@ -18,8 +18,6 @@ app.use(helmet());
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : { origin: false }));
 app.use(express.json({ limit: '100kb' }));
 
-// Small in-memory limiter for the current single-process deployment. Replace with
-// a shared store (for example Redis) when running multiple API instances.
 const rateBuckets = new Map();
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT = 120;
@@ -39,6 +37,8 @@ app.use(rateLimit);
 
 const catalogPath = path.resolve(process.cwd(), '../data/dramas.json');
 const emailSchema = z.string().email().max(254);
+const progressSchema = z.object({ secondsWatched: z.number().int().min(0).max(24 * 60 * 60) });
+const planSchema = z.object({ plan: z.enum(['daily', 'weekly', 'monthly']) });
 
 async function catalog() {
   return JSON.parse(await fs.readFile(catalogPath, 'utf8'));
@@ -98,9 +98,9 @@ app.post('/episodes/:id/play', auth, async (req, res) => {
 });
 
 app.put('/episodes/:id/progress', auth, (req, res) => {
-  const seconds = Number(req.body?.secondsWatched);
-  if (!Number.isInteger(seconds) || seconds < 0) return res.status(400).json({ error: 'secondsWatched must be a non-negative integer' });
-  res.json({ ok: true, episodeId: req.params.id, secondsWatched: seconds });
+  const parsed = progressSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'secondsWatched must be an integer from 0 to 86400' });
+  res.json({ ok: true, episodeId: req.params.id, secondsWatched: parsed.data.secondsWatched });
 });
 
 app.get('/plans', (_req, res) => res.json([
@@ -110,9 +110,9 @@ app.get('/plans', (_req, res) => res.json([
 ]));
 
 app.post('/subscriptions/checkout', auth, (req, res) => {
-  const plan = ['daily', 'weekly', 'monthly'].includes(req.body?.plan) ? req.body.plan : null;
-  if (!plan) return res.status(400).json({ error: 'Invalid plan' });
-  return res.status(501).json({ error: 'Payment provider not configured', plan });
+  const parsed = planSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid plan' });
+  return res.status(501).json({ error: 'Payment provider not configured', plan: parsed.data.plan });
 });
 
 app.post('/payments/webhook', (_req, res) => res.status(501).json({ error: 'Payment webhook provider not configured' }));
