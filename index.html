@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TagalogDrama — short Filipino drama series in one place.">
+  <title>TagalogDrama</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home">Tagalog<span>Drama</span></a>
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#series">Series</a>
+      <a href="#plans">Plans</a>
+    </nav>
+    <button class="profile-btn" id="loginBtn">Sign in</button>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">FILIPINO SHORT DRAMAS</p>
+        <h1>Stories that keep you watching.</h1>
+        <p>Discover original and licensed Filipino short-drama stories. Start watching free, or unlock unlimited episodes with a subscription.</p>
+        <div class="hero-actions">
+          <a class="primary" href="#series">Start Watching</a>
+          <a class="secondary" href="#plans">View Plans</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="series">
+      <div class="section-head"><div><p class="eyebrow">TRENDING NOW</p><h2>Featured dramas</h2></div></div>
+      <div class="cards" id="dramaGrid"></div>
+    </section>
+
+    <section class="watch-free">
+      <div><p class="eyebrow">WATCH FREE</p><h2>Unlock an episode by watching a short ad.</h2><p>Rewarded-ad access can be connected to your ad provider when the production build is configured.</p></div>
+      <button class="primary" id="freeBtn">Watch Free Episode</button>
+    </section>
+
+    <section class="section plans" id="plans">
+      <p class="eyebrow">MEMBERSHIP</p><h2>Choose your plan</h2>
+      <div class="plan-grid">
+        <article class="plan"><h3>Daily</h3><div class="price">₱29 <small>/ day</small></div><p>Unlimited viewing for 24 hours.</p><button class="primary subscribe" data-plan="Daily">Choose Daily</button></article>
+        <article class="plan featured"><span class="badge">POPULAR</span><h3>Weekly</h3><div class="price">₱99 <small>/ week</small></div><p>Unlimited viewing for 7 days.</p><button class="primary subscribe" data-plan="Weekly">Choose Weekly</button></article>
+        <article class="plan"><h3>Monthly</h3><div class="price">₱249 <small>/ month</small></div><p>Unlimited viewing for 30 days.</p><button class="primary subscribe" data-plan="Monthly">Choose Monthly</button></article>
+      </div>
+      <p class="note">Subscription prices are placeholders for the MVP and should be connected to a real payment/subscription provider before launch.</p>
+    </section>
+  </main>
+
+  <footer><strong>TagalogDrama</strong><span>© 2026 TagalogDrama. Content must be owned or licensed.</span></footer>
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
