@@ -18,6 +18,25 @@ app.use(helmet());
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : { origin: false }));
 app.use(express.json({ limit: '100kb' }));
 
+// Small in-memory limiter for the current single-process deployment. Replace with
+// a shared store (for example Redis) when running multiple API instances.
+const rateBuckets = new Map();
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 120;
+function rateLimit(req, res, next) {
+  const now = Date.now();
+  const key = req.ip || req.socket.remoteAddress || 'unknown';
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now - bucket.startedAt >= RATE_WINDOW_MS) {
+    rateBuckets.set(key, { startedAt: now, count: 1 });
+    return next();
+  }
+  bucket.count += 1;
+  if (bucket.count > RATE_LIMIT) return res.status(429).json({ error: 'Too many requests' });
+  return next();
+}
+app.use(rateLimit);
+
 const catalogPath = path.resolve(process.cwd(), '../data/dramas.json');
 const emailSchema = z.string().email().max(254);
 
