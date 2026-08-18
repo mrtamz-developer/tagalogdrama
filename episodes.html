@@ -1,6 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f"><title>Episodes — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css"></head><body><header class="topbar"><a class="brand" href="index.html">Tagalog<span>Drama</span></a><nav><a href="index.html">Home</a><a href="catalog.html">Series</a><a href="search.html">Search</a><a href="library.html">Library</a><a href="account.html">Account</a></nav></header><main class="episodes-page"><section class="catalog-head"><p class="eyebrow">SERIES</p><h1 id="seriesTitle">Episodes</h1><p id="seriesDescription" class="muted"></p></section><div id="episodeList" class="episode-list"></div></main><script>const data={
-'sa-likod-ng-pangako':{title:'Sa Likod ng Pangako',description:'A family romance story. Replace this placeholder with your licensed synopsis.',episodes:24},
-'mahal-kita-kahit-kailan':{title:'Mahal Kita, Kahit Kailan',description:'A romance drama placeholder for licensed content.',episodes:18},
-'ang-huling-lihim':{title:'Ang Huling Lihim',description:'A mystery drama placeholder for licensed content.',episodes:30},
-'bago-maghatinggabi':{title:'Bago Maghatinggabi',description:'A romance suspense placeholder for licensed content.',episodes:16}};
-const id=new URLSearchParams(location.search).get('series')||new URLSearchParams(location.search).get('id')||'sa-likod-ng-pangako';const series=data[id]||data['sa-likod-ng-pangako'];document.getElementById('seriesTitle').textContent=series.title;document.getElementById('seriesDescription').textContent=series.description;const progress=JSON.parse(localStorage.getItem('td-progress')||localStorage.getItem('tagalogdrama.progress')||'{}');const list=document.getElementById('episodeList');const episodes=Array.from({length:series.episodes},(_,i)=>i+1);list.innerHTML=episodes.map(n=>{const key=`${id}-ep-${n}`;const watched=Number(progress[key]||0);const free=n===1||n%5===0;return `<article class="episode-card"><div class="episode-number">${n}</div><div class="episode-copy"><h2>Episode ${n}</h2><p>${free?'🎬 Free with rewarded ad':'🔒 Subscriber episode'}${watched?` · ${watched}% watched`:''}</p><div class="episode-progress"><span style="width:${Math.min(watched,100)}%"></span></div></div><a class="primary" href="watch.html?series=${encodeURIComponent(series.title)}&episode=${encodeURIComponent(key)}&number=${n}">${free?'Watch':'Unlock & Watch'}</a></article>`}).join('');</script></body></html>
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f"><title>Episodes — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">Tagalog<span>Drama</span></a><nav><a href="index.html">Home</a><a href="catalog.html">Series</a><a href="search.html">Search</a><a href="library.html">Library</a><a href="account.html">Account</a></nav></header>
+<main class="episodes-page"><section class="catalog-head"><p class="eyebrow">SERIES</p><h1 id="seriesTitle">Episodes</h1><p id="seriesDescription" class="muted"></p></section><div id="episodeList" class="episode-list"></div></main>
+<script src="app-config.js"></script>
+<script>
+const fallback={
+'sa-likod-ng-pangako':{title:'Sa Likod ng Pangako',description:'A family romance story. Replace this placeholder with your licensed synopsis.',episodes:2},
+'mahal-kita-kahit-kailan':{title:'Mahal Kita, Kahit Kailan',description:'A romance drama placeholder for licensed content.',episodes:2}
+};
+const id=new URLSearchParams(location.search).get('series')||new URLSearchParams(location.search).get('id')||'sa-likod-ng-pangako';
+const progress=JSON.parse(localStorage.getItem('td-progress')||localStorage.getItem('tagalogdrama.progress')||'{}');
+const list=document.getElementById('episodeList');
+function render(series,episodes){
+ document.getElementById('seriesTitle').textContent=series.title;
+ document.getElementById('seriesDescription').textContent=series.description||'';
+ list.innerHTML=episodes.map(e=>{const key=e.id;const watched=Number(progress[key]||0);const free=e.access==='free_ad';return `<article class="episode-card"><div class="episode-number">${e.number}</div><div class="episode-copy"><h2>${e.title}</h2><p>${free?'🎬 Free with verified rewarded ad':'🔒 Subscriber episode'}${watched?` · ${watched}% watched`:''}</p><div class="episode-progress"><span style="width:${Math.min(watched,100)}%"></span></div></div><a class="primary" href="watch.html?series=${encodeURIComponent(series.title)}&episode=${encodeURIComponent(key)}&number=${e.number}">${free?'Watch':'Unlock & Watch'}</a></article>`}).join('');
+}
+async function load(){
+ const base=window.TAGALOGDRAMA_API||'';
+ if(base){try{const response=await fetch(`${base}/series/${encodeURIComponent(id)}/episodes`);if(response.ok){const body=await response.json();render(fallback[id]||{title:id,description:''},body.episodes||[]);return;}}catch{}}
+ const series=fallback[id]||fallback['sa-likod-ng-pangako'];
+ const episodes=Array.from({length:series.episodes},(_,i)=>({id:`${id}-ep-${i+1}`,number:i+1,title:`Episode ${i+1}`,access:i===0?'free_ad':'subscription'}));
+ render(series,episodes);
+}
+load();
+</script>
+</body></html>
