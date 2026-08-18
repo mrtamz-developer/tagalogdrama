@@ -1,10 +1,10 @@
 /**
  * PayMongo server-side adapter.
  * Keep PAYMONGO_SECRET_KEY on the backend only.
- * Subscription capability must be activated on your PayMongo account before live use.
+ * Uses PayMongo Hosted Checkout v2 for new integrations.
  */
 
-const PAYMONGO_API = 'https://api.paymongo.com/v1';
+const PAYMONGO_API = 'https://api.paymongo.com/v2';
 
 function authHeader(secret) {
   return 'Basic ' + Buffer.from(`${secret}:`).toString('base64');
@@ -17,9 +17,9 @@ async function paymongoRequest(path, method, body) {
   const response = await fetch(`${PAYMONGO_API}${path}`, {
     method,
     headers: {
-      'Authorization': authHeader(secret),
+      Authorization: authHeader(secret),
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      Accept: 'application/json'
     },
     body: body ? JSON.stringify(body) : undefined
   });
@@ -32,23 +32,48 @@ async function paymongoRequest(path, method, body) {
   return payload;
 }
 
-async function createSubscription({ planId, customerId }) {
-  return paymongoRequest('/subscriptions', 'POST', {
+const PLANS = Object.freeze({
+  daily: { name: 'TagalogDrama Daily', amount: 2900, durationDays: 1 },
+  weekly: { name: 'TagalogDrama Weekly', amount: 9900, durationDays: 7 },
+  monthly: { name: 'TagalogDrama Monthly', amount: 24900, durationDays: 30 }
+});
+
+export async function createCheckoutSession({ plan, userId, email, successUrl, cancelUrl }) {
+  const selected = PLANS[plan];
+  if (!selected) throw new Error('Invalid subscription plan');
+
+  const reference = `TD-${String(userId)}-${Date.now()}`;
+  const payload = await paymongoRequest('/checkout_sessions', 'POST', {
     data: {
       attributes: {
-        plan_id: planId,
-        customer_id: customerId
+        line_items: [{
+          name: selected.name,
+          amount: selected.amount,
+          currency: 'PHP',
+          quantity: 1
+        }],
+        payment_method_types: ['card', 'gcash', 'qrph'],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        reference_number: reference,
+        send_email_receipt: true,
+        metadata: {
+          user_id: String(userId),
+          plan,
+          duration_days: String(selected.durationDays),
+          email: String(email || '')
+        }
       }
     }
   });
+
+  return {
+    id: payload?.data?.id,
+    checkoutUrl: payload?.data?.attributes?.checkout_url,
+    referenceNumber: reference,
+    plan,
+    durationDays: selected.durationDays
+  };
 }
 
-async function getSubscription(subscriptionId) {
-  return paymongoRequest(`/subscriptions/${encodeURIComponent(subscriptionId)}`, 'GET');
-}
-
-async function cancelSubscription(subscriptionId) {
-  return paymongoRequest(`/subscriptions/${encodeURIComponent(subscriptionId)}`, 'DELETE');
-}
-
-module.exports = { createSubscription, getSubscription, cancelSubscription };
+export { PLANS };
