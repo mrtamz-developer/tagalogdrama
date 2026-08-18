@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mrtamz-developer.github.io/tagalogdrama/sitemap.xml
