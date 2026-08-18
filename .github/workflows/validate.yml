@@ -1,0 +1,23 @@
+name: Validate TagalogDrama
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON
+        run: |
+          python - <<'PY'
+          import json
+          for f in ['manifest.json','data/dramas.json']:
+              with open(f, encoding='utf-8') as h: json.load(h)
+          print('JSON validation passed')
+          PY
+      - name: Check required frontend files
+        run: |
+          for f in index.html style.css app.js manifest.json sw.js catalog.html episodes.html watch.html search.html search.js library.html library.js account.html account.js; do test -f "$f" || exit 1; done
+          echo 'Required frontend files present'
