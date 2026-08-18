@@ -1,0 +1,8 @@
+{
+  "series": [
+    {"id":"sa-likod-ng-pangako","title":"Sa Likod ng Pangako","genres":["Romance","Family"],"episodes":24,"tag":"NEW"},
+    {"id":"mahal-kita-kahit-kailan","title":"Mahal Kita, Kahit Kailan","genres":["Romance","Drama"],"episodes":18,"tag":"TRENDING"},
+    {"id":"ang-huling-lihim","title":"Ang Huling Lihim","genres":["Mystery","Drama"],"episodes":30,"tag":"HOT"},
+    {"id":"bago-maghatinggabi","title":"Bago Maghatinggabi","genres":["Romance","Suspense"],"episodes":16,"tag":"NEW"}
+  ]
+}
