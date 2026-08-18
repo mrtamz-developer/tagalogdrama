@@ -11,3 +11,7 @@ coverage/
 *.pem
 *.key
 *.p12
+.vscode/
+.idea/
+*.tmp
+*.temp
