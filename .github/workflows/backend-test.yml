@@ -31,6 +31,8 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package.json
       - run: npm install
+      - name: Syntax check
+        run: npm run check
       - name: Start API
         run: npm start > /tmp/tagalogdrama-api.log 2>&1 &
       - name: Wait for API
