@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f">
+<title>Payment Status — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+<style>
+.payment-page{min-height:70vh;display:grid;place-items:center;padding:48px 20px}.payment-card{max-width:620px;width:100%;background:#15151c;border:1px solid #2a2a35;border-radius:20px;padding:34px;text-align:center}.payment-icon{font-size:3rem;margin-bottom:12px}.payment-status{font-size:1.05rem;color:#bbb;min-height:52px}.payment-details{margin:22px 0;padding:16px;border-radius:14px;background:#101016;text-align:left}.payment-details div{display:flex;justify-content:space-between;gap:20px;padding:7px 0}.payment-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.spinner{width:30px;height:30px;border:3px solid #333;border-top-color:#e6b84a;border-radius:50%;margin:18px auto;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">Tagalog<span>Drama</span></a><nav><a href="index.html">Home</a><a href="catalog.html">Series</a><a href="account.html">Account</a></nav></header>
+<main class="payment-page"><section class="payment-card"><div id="icon" class="payment-icon">⏳</div><p class="eyebrow">PAYMENT STATUS</p><h1 id="title">Verifying your subscription</h1><div id="spinner" class="spinner"></div><p id="message" class="payment-status">Your checkout returned successfully. We are waiting for the verified payment webhook before activating premium access.</p><div id="details" class="payment-details" hidden><div><span>Plan</span><strong id="plan">—</strong></div><div><span>Status</span><strong id="status">—</strong></div><div><span>Expires</span><strong id="expires">—</strong></div></div><div class="payment-actions"><a class="primary" href="account.html">Open Account</a><a class="secondary" href="catalog.html">Browse Series</a></div></section></main>
+<script src="app-config.js"></script>
+<script>
+const base=window.TAGALOGDRAMA_API||'';const token=localStorage.getItem('tagalogdrama.token');const icon=document.getElementById('icon'),title=document.getElementById('title'),message=document.getElementById('message'),spinner=document.getElementById('spinner'),details=document.getElementById('details'),planEl=document.getElementById('plan'),statusEl=document.getElementById('status'),expiresEl=document.getElementById('expires');
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function success(sub){icon.textContent='✅';title.textContent='Subscription activated';message.textContent='Your payment has been verified and premium access is active.';spinner.hidden=true;details.hidden=false;planEl.textContent=(sub.plan||'premium').toUpperCase();statusEl.textContent=(sub.status||'active').toUpperCase();expiresEl.textContent=sub.expiresAt?new Date(sub.expiresAt).toLocaleString():'—';}
+function pending(text){message.textContent=text||'Payment received. Subscription activation is still being verified.';}
+function fail(text){icon.textContent='⚠️';title.textContent='Unable to confirm activation';message.textContent=text;spinner.hidden=true;}
+async function check(){if(!base){fail('The payment status service is not configured.');return}if(!token){fail('Please sign in to confirm your subscription status.');return}for(let attempt=0;attempt<10;attempt++){try{const response=await fetch(`${base}/me/subscription`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store'});const body=await response.json().catch(()=>({}));if(response.status===401){fail('Your session expired. Please sign in again, then open Account to check your plan.');return}if(response.ok&&body.active&&body.subscription){success(body.subscription);return}if(response.ok){pending('Payment checkout completed. Waiting for the verified payment webhook to activate your plan…');}else{pending(body.error||'Subscription verification is temporarily unavailable. Retrying…');}}catch{pending('Waiting for the subscription service…');}if(attempt<9)await sleep(2000);}icon.textContent='⏳';title.textContent='Activation still processing';message.textContent='We have not confirmed premium access yet. Do not pay again. Open Account shortly to recheck your verified subscription status.';spinner.hidden=true;}
+check();
+</script>
+</body></html>
