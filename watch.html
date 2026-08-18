@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f"><title>Watch — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+</head><body>
+<header class="topbar"><a class="brand" href="index.html">Tagalog<span>Drama</span></a><nav><a href="index.html#series">Series</a><a href="index.html#plans">Plans</a></nav></header>
+<main class="watch-page">
+<section class="player"><div class="video-placeholder"><div class="play-icon">▶</div><h1 id="title">Episode 1</h1><p>Video player placeholder — connect your licensed video URL before production.</p></div></section>
+<section class="watch-info"><p class="eyebrow">NOW WATCHING</p><h2 id="seriesTitle">TagalogDrama</h2><p id="episodeText">Episode 1</p><div class="progress"><span id="progressBar"></span></div><div class="watch-actions"><button class="primary" id="freeWatch">🎬 Watch Free With Ad</button><a class="secondary" href="index.html#plans">Unlock Unlimited</a></div></section>
+</main><div class="toast" id="toast"></div><script src="app.js"></script><script>const q=new URLSearchParams(location.search);const name=q.get('title')||'TagalogDrama';document.getElementById('title').textContent=name+' — Episode 1';document.getElementById('seriesTitle').textContent=name;document.getElementById('freeWatch').onclick=()=>{const t=document.getElementById('toast');t.textContent='Rewarded-ad placeholder: connect your ad SDK to unlock this episode.';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)};</script>
+</body></html>
