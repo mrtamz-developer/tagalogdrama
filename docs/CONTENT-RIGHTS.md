@@ -1,16 +1,20 @@
-# Content rights gate
+# Content rights policy
 
-No drama, episode, poster, thumbnail, subtitle, audio track, or promotional asset should be published unless the project has documented permission to distribute it.
+TagalogDrama must publish only content that the project owner has the legal right to distribute.
 
-For each production asset record:
+For every production series/episode and associated artwork, retain records showing:
 
-- Rights holder/licensor
-- License or permission reference
-- Territory
-- Start/end dates where applicable
-- Allowed platforms
-- Monetization permission
+- Rights holder or licensor
+- License/agreement reference
+- Permitted territories
+- Start and end dates of the license
+- Streaming/mobile/web rights granted
+- Advertising and subscription monetization rights
+- Subtitle/audio/music rights
 - Attribution requirements
-- Takedown/contact information
+- Takedown or termination requirements
+- Rights-review contact
 
 Placeholder catalog entries may remain in development, but production playback URLs must only be added after rights verification.
+
+Do not upload copyrighted drama episodes, posters, subtitles, music, or clips merely because they are publicly available online. Remove or disable content promptly when rights expire or a valid takedown is received.
