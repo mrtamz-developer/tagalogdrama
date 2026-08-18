@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "series": [
+    {
+      "id": "sa-likod-ng-pangako",
+      "title": "Sa Likod ng Pangako",
+      "genre": ["Romance", "Family"],
+      "tag": "NEW",
+      "description": "A family romance story. Replace this placeholder with your licensed synopsis.",
+      "episodes": [
+        {"id":"slp-01","number":1,"title":"Unang Pangako","access":"free_ad","videoUrl":""},
+        {"id":"slp-02","number":2,"title":"Ang Simula","access":"subscription","videoUrl":""}
+      ]
+    },
+    {
+      "id": "mahal-kita-kahit-kailan",
+      "title": "Mahal Kita, Kahit Kailan",
+      "genre": ["Romance", "Drama"],
+      "tag": "TRENDING",
+      "description": "A romance drama placeholder for licensed content.",
+      "episodes": [
+        {"id":"mkk-01","number":1,"title":"Unang Pagkikita","access":"free_ad","videoUrl":""},
+        {"id":"mkk-02","number":2,"title":"Sa Puso Ko","access":"subscription","videoUrl":""}
+      ]
+    }
+  ]
+}
