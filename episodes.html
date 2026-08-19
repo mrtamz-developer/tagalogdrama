@@ -1,29 +1,104 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f"><title>Episodes — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css"></head>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0f">
+<title>Episodes — TagalogDrama</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+<style>
+.episode-access{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:.9rem}.episode-access.allowed{color:#8ee6a1}.episode-access.locked{color:#f0c36a}.episode-access.checking{color:#aaa}.episode-card.is-locked{opacity:.92}.episode-card .primary[aria-disabled="true"]{opacity:.65}
+</style>
+</head>
 <body>
 <header class="topbar"><a class="brand" href="index.html">Tagalog<span>Drama</span></a><nav><a href="index.html">Home</a><a href="catalog.html">Series</a><a href="search.html">Search</a><a href="library.html">Library</a><a href="account.html">Account</a></nav></header>
 <main class="episodes-page"><section class="catalog-head"><p class="eyebrow">SERIES</p><h1 id="seriesTitle">Episodes</h1><p id="seriesDescription" class="muted"></p></section><div id="episodeList" class="episode-list"></div></main>
 <script src="app-config.js"></script>
 <script>
 const fallback={
-'sa-likod-ng-pangako':{title:'Sa Likod ng Pangako',description:'A family romance story. Replace this placeholder with your licensed synopsis.',episodes:2},
-'mahal-kita-kahit-kailan':{title:'Mahal Kita, Kahit Kailan',description:'A romance drama placeholder for licensed content.',episodes:2}
+  'sa-likod-ng-pangako':{title:'Sa Likod ng Pangako',description:'A family romance story. Replace this placeholder with your licensed synopsis.',episodes:2},
+  'mahal-kita-kahit-kailan':{title:'Mahal Kita, Kahit Kailan',description:'A romance drama placeholder for licensed content.',episodes:2}
 };
-const id=new URLSearchParams(location.search).get('series')||new URLSearchParams(location.search).get('id')||'sa-likod-ng-pangako';
+const params=new URLSearchParams(location.search);
+const id=params.get('series')||params.get('id')||'sa-likod-ng-pangako';
 const progress=JSON.parse(localStorage.getItem('td-progress')||localStorage.getItem('tagalogdrama.progress')||'{}');
 const list=document.getElementById('episodeList');
+const base=window.TAGALOGDRAMA_API||'';
+const token=localStorage.getItem('tagalogdrama.token');
+
+function accessType(e){return e.access_type||e.access||'subscription';}
+function episodeNumber(e,index){return e.episode_number||e.number||index+1;}
+function watchUrl(series,e,index){const n=episodeNumber(e,index);return `watch.html?series=${encodeURIComponent(series.title)}&seriesId=${encodeURIComponent(id)}&episode=${encodeURIComponent(e.id)}&number=${encodeURIComponent(n)}`;}
+
 function render(series,episodes){
- document.getElementById('seriesTitle').textContent=series.title;
- document.getElementById('seriesDescription').textContent=series.description||'';
- list.innerHTML=episodes.map(e=>{const key=e.id;const watched=Number(progress[key]||0);const free=e.access==='free_ad';return `<article class="episode-card"><div class="episode-number">${e.number}</div><div class="episode-copy"><h2>${e.title}</h2><p>${free?'🎬 Free with verified rewarded ad':'🔒 Subscriber episode'}${watched?` · ${watched}% watched`:''}</p><div class="episode-progress"><span style="width:${Math.min(watched,100)}%"></span></div></div><a class="primary" href="watch.html?series=${encodeURIComponent(series.title)}&episode=${encodeURIComponent(key)}&number=${e.number}">${free?'Watch':'Unlock & Watch'}</a></article>`}).join('');
+  document.getElementById('seriesTitle').textContent=series.title;
+  document.getElementById('seriesDescription').textContent=series.description||'';
+  list.innerHTML=episodes.map((e,index)=>{
+    const watched=Number(progress[e.id]||0);
+    const free=accessType(e)==='free_ad';
+    return `<article class="episode-card" data-episode-id="${e.id}" data-access="${accessType(e)}">
+      <div class="episode-number">${episodeNumber(e,index)}</div>
+      <div class="episode-copy"><h2>${e.title||`Episode ${episodeNumber(e,index)}`}</h2>
+        <p>${free?'🎬 Free with verified rewarded ad':'🔒 Subscriber episode'}${watched?` · ${watched}% watched`:''}</p>
+        <div class="episode-access ${token?'checking':'locked'}">${token?'Checking access…':'🔒 Sign in to check access'}</div>
+        <div class="episode-progress"><span style="width:${Math.min(watched,100)}%"></span></div>
+      </div>
+      <a class="primary episode-action" href="${watchUrl(series,e,index)}">${free?'Watch / Unlock':'Unlock & Watch'}</a>
+    </article>`;
+  }).join('');
+  if(token&&base) refreshAccessStates();
 }
+
+async function refreshAccessStates(){
+  const cards=[...document.querySelectorAll('.episode-card')];
+  await Promise.all(cards.map(async card=>{
+    const episodeId=card.dataset.episodeId;
+    const accessEl=card.querySelector('.episode-access');
+    const action=card.querySelector('.episode-action');
+    try{
+      const response=await fetch(`${base}/episodes/${encodeURIComponent(episodeId)}/access`,{headers:{Authorization:`Bearer ${token}`}});
+      if(response.status===401){accessEl.className='episode-access locked';accessEl.textContent='🔒 Sign in required';card.classList.add('is-locked');return;}
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(body.error||'Access check failed');
+      if(body.allowed){
+        accessEl.className='episode-access allowed';
+        accessEl.textContent=body.access==='subscription'?`✓ Included with ${String(body.plan||'active').toUpperCase()} plan`:'✓ Rewarded-ad unlock active';
+        action.textContent='Watch Now';
+        card.classList.remove('is-locked');
+      }else{
+        accessEl.className='episode-access locked';
+        card.classList.add('is-locked');
+        if(body.reason==='subscription_required'){
+          accessEl.textContent='🔒 Subscription required';
+          action.textContent='Subscribe & Watch';
+        }else if(body.reason==='rewarded_ad_required'){
+          accessEl.textContent='🎬 Watch rewarded ad to unlock';
+          action.textContent='Watch Ad & Unlock';
+        }else{
+          accessEl.textContent='🔒 Not available';
+          action.textContent='View Episode';
+        }
+      }
+    }catch{
+      accessEl.className='episode-access checking';
+      accessEl.textContent='Access status unavailable';
+    }
+  }));
+}
+
 async function load(){
- const base=window.TAGALOGDRAMA_API||'';
- if(base){try{const response=await fetch(`${base}/series/${encodeURIComponent(id)}/episodes`);if(response.ok){const body=await response.json();render(fallback[id]||{title:id,description:''},body.episodes||[]);return;}}catch{}}
- const series=fallback[id]||fallback['sa-likod-ng-pangako'];
- const episodes=Array.from({length:series.episodes},(_,i)=>({id:`${id}-ep-${i+1}`,number:i+1,title:`Episode ${i+1}`,access:i===0?'free_ad':'subscription'}));
- render(series,episodes);
+  if(base){
+    try{
+      const response=await fetch(`${base}/series/${encodeURIComponent(id)}/episodes`);
+      if(response.ok){
+        const body=await response.json();
+        let series=fallback[id]||{title:id,description:''};
+        try{const sr=await fetch(`${base}/series/${encodeURIComponent(id)}`);if(sr.ok)series=await sr.json();}catch{}
+        render(series,body.episodes||[]);
+        return;
+      }
+    }catch{}
+  }
+  const series=fallback[id]||fallback['sa-likod-ng-pangako'];
+  const episodes=Array.from({length:series.episodes},(_,i)=>({id:`${id}-ep-${i+1}`,number:i+1,title:`Episode ${i+1}`,access:i===0?'free_ad':'subscription'}));
+  render(series,episodes);
 }
 load();
 </script>
